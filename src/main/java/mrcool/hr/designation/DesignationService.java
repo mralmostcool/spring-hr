@@ -38,7 +38,7 @@ public class DesignationService {
     public DesignationResponseDTO createDesignation(DesignationRequestDTO request) {
         try {
             Designation designation = DesignationMapper.toEntity(request);
-            Designation saved = designationRepository.save(designation);
+            Designation saved = designationRepository.saveAndFlush(designation);
             return DesignationMapper.toResponse(saved);
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateResourceException("Designation with name " + request.name() + " already exists");
