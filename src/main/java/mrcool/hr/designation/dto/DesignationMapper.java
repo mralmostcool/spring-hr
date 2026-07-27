@@ -1,0 +1,19 @@
+package mrcool.hr.designation.dto;
+
+import mrcool.hr.designation.Designation;
+
+public class DesignationMapper {
+
+    public static DesignationResponseDTO toResponse(Designation designation) {
+        return new DesignationResponseDTO(
+                designation.getId(),
+                designation.getName(),
+                designation.getCreatedAt(),
+                designation.getUpdatedAt());
+    }
+
+    public static Designation toEntity(DesignationRequestDTO request) {
+        return Designation.builder().name(request.name()).build();
+    }
+
+}
