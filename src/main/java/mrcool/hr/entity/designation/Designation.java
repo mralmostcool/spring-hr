@@ -39,6 +39,9 @@ public class Designation {
     @Column(nullable = false, length = 255, unique = true)
     private String name;
 
+    @Column(name = "rank", unique = false)
+    private Integer rank;
+
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 

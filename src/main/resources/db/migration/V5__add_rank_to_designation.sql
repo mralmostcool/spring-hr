@@ -1,0 +1,2 @@
+ALTER TABLE designation
+ADD COLUMN rank INTEGER UNIQUE;

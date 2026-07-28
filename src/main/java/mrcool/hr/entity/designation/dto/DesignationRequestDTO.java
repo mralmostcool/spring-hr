@@ -7,8 +7,9 @@ import jakarta.validation.constraints.Size;
 // import mrcool.hr.entity.designation.Designation;
 
 public record DesignationRequestDTO(
-        @NotBlank @NotNull @Size(max = 255) String name) {
-    // public Designation toEntity() {
-    // return Designation.builder().name(name).build();
-    // }
+        @NotBlank @NotNull @Size(max = 255) String name,
+        Integer rank) {
+    public DesignationRequestDTO(String name) {
+        this(name, null);
+    }
 }

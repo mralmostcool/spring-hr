@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import mrcool.hr.entity.designation.dto.DesignationRequestDTO;
+import mrcool.hr.entity.designation.dto.DesignationReorderRequestDTO;
 import mrcool.hr.entity.employee.Employee;
 import mrcool.hr.entity.employee.EmployeeRepository;
 
@@ -85,6 +86,44 @@ public class DesignationControllerTest {
     }
 
     @Test
+    void testCreateDesignationAutoIncrementRank() throws Exception {
+        employeeRepository.deleteAll();
+        designationRepository.deleteAll();
+
+        // 1st designation with null rank -> gets rank 1
+        DesignationRequestDTO request1 = new DesignationRequestDTO("Role X");
+        mockMvc.perform(post("/api/v1/designations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request1)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rank", is(1)));
+
+        // 2nd designation with null rank -> gets rank 2 (max 1 + 1)
+        DesignationRequestDTO request2 = new DesignationRequestDTO("Role Y");
+        mockMvc.perform(post("/api/v1/designations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request2)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rank", is(2)));
+
+        // 3rd designation with explicit rank 10 -> gets rank 10
+        DesignationRequestDTO request3 = new DesignationRequestDTO("Role Z", 10);
+        mockMvc.perform(post("/api/v1/designations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request3)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rank", is(10)));
+
+        // 4th designation with null rank -> gets rank 11 (max 10 + 1)
+        DesignationRequestDTO request4 = new DesignationRequestDTO("Role W");
+        mockMvc.perform(post("/api/v1/designations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request4)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rank", is(11)));
+    }
+
+    @Test
     void testCreateDesignationDuplicateName() throws Exception {
         designationRepository.saveAndFlush(Designation.builder().name("Duplicate").build());
         DesignationRequestDTO request = new DesignationRequestDTO("Duplicate");
@@ -117,6 +156,39 @@ public class DesignationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(des.getId().toString())))
                 .andExpect(jsonPath("$.name", is("Tech Lead")));
+    }
+
+    @Test
+    void testUpdateDesignationRankRules() throws Exception {
+        employeeRepository.deleteAllInBatch();
+        designationRepository.deleteAllInBatch();
+
+        // 1. If request.rank() is not null, update it to requested rank
+        Designation des1 = designationRepository.saveAndFlush(Designation.builder().name("Manager").rank(5).build());
+        DesignationRequestDTO req1 = new DesignationRequestDTO("Manager Updated", 8);
+        mockMvc.perform(put("/api/v1/designations/{id}", des1.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rank", is(8)));
+
+        // 2. If request.rank() is null, but designation has rank, preserve it
+        DesignationRequestDTO req2 = new DesignationRequestDTO("Manager Preserved", null);
+        mockMvc.perform(put("/api/v1/designations/{id}", des1.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req2)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is("Manager Preserved")))
+                .andExpect(jsonPath("$.rank", is(8)));
+
+        // 3. If request.rank() is null and designation has no rank yet, auto-assign
+        Designation des2 = designationRepository.saveAndFlush(Designation.builder().name("Developer").build()); // rank is null
+        DesignationRequestDTO req3 = new DesignationRequestDTO("Developer Updated", null);
+        mockMvc.perform(put("/api/v1/designations/{id}", des2.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req3)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rank", is(9))); // max rank was 8, so 8 + 1 = 9
     }
 
     @Test
@@ -189,4 +261,43 @@ public class DesignationControllerTest {
         assertFalse(designationRepository.existsById(des1.getId()));
         assertFalse(designationRepository.existsById(des2.getId()));
     }
+
+    @Test
+    void testDeleteAllDesignationsWithEmployees() throws Exception {
+        employeeRepository.deleteAll();
+        designationRepository.deleteAll();
+        Designation des = designationRepository.saveAndFlush(Designation.builder().name("Role A").build());
+        employeeRepository.saveAndFlush(Employee.builder().name("John").designation(des).build());
+
+        mockMvc.perform(delete("/api/v1/designations/all"))
+                .andExpect(status().isAccepted());
+
+        assertFalse(designationRepository.existsById(des.getId()));
+        assertFalse(employeeRepository.findAll().iterator().hasNext());
+    }
+
+    @Test
+    void testReorderDesignations() throws Exception {
+        employeeRepository.deleteAllInBatch();
+        designationRepository.deleteAllInBatch();
+
+        Designation des1 = designationRepository.saveAndFlush(Designation.builder().name("Role A").rank(1).build());
+        Designation des2 = designationRepository.saveAndFlush(Designation.builder().name("Role B").rank(2).build());
+
+        java.util.List<DesignationReorderRequestDTO> request = java.util.List.of(
+                new DesignationReorderRequestDTO(des1.getId(), 2),
+                new DesignationReorderRequestDTO(des2.getId(), 1)
+        );
+
+        mockMvc.perform(put("/api/v1/designations/reorder")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id", is(des2.getId().toString())))
+                .andExpect(jsonPath("$[0].rank", is(1)))
+                .andExpect(jsonPath("$[1].id", is(des1.getId().toString())))
+                .andExpect(jsonPath("$[1].rank", is(2)));
+    }
 }
+

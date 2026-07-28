@@ -8,13 +8,10 @@ import java.util.UUID;
 public record DesignationResponseDTO(
         UUID id,
         String name,
+        Integer rank,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
-    // public static DesignationResponseDTO from(Designation designation) {
-    // return new DesignationResponseDTO(
-    // designation.getId(),
-    // designation.getName(),
-    // designation.getCreatedAt(),
-    // designation.getUpdatedAt());
-    // }
+    public DesignationResponseDTO(UUID id, String name, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+        this(id, name, null, createdAt, updatedAt);
+    }
 }

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import mrcool.hr.entity.designation.dto.DesignationRequestDTO;
 import mrcool.hr.entity.designation.dto.DesignationResponseDTO;
+import mrcool.hr.entity.designation.dto.DesignationReorderRequestDTO;
 
 @RestController
 @RequestMapping("/api/v1/designations")
@@ -24,6 +25,10 @@ public class DesignationController {
 
     private final DesignationService designationService;
 
+    /**
+     * Controller for Designation management.
+     * Fully supports the 'rank' property for designations.
+     */
     public DesignationController(DesignationService designationService) {
         this.designationService = designationService;
     }
@@ -49,6 +54,13 @@ public class DesignationController {
             @Valid @RequestBody DesignationRequestDTO request) {
         DesignationResponseDTO updated = designationService.updateDesignation(id, request);
         return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/reorder")
+    public ResponseEntity<List<DesignationResponseDTO>> reorder(
+            @Valid @RequestBody List<DesignationReorderRequestDTO> request) {
+        List<DesignationResponseDTO> response = designationService.reorderDesignations(request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

@@ -8,12 +8,16 @@ public class DesignationMapper {
         return new DesignationResponseDTO(
                 designation.getId(),
                 designation.getName(),
+                designation.getRank(),
                 designation.getCreatedAt(),
                 designation.getUpdatedAt());
     }
 
     public static Designation toEntity(DesignationRequestDTO request) {
-        return Designation.builder().name(request.name()).build();
+        return Designation.builder()
+                .name(request.name())
+                .rank(request.rank())
+                .build();
     }
 
 }
