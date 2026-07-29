@@ -14,6 +14,8 @@ import mrcool.hr.entity.designation.dto.DesignationRequestDTO;
 import mrcool.hr.entity.designation.dto.DesignationReorderRequestDTO;
 import mrcool.hr.entity.employee.Employee;
 import mrcool.hr.entity.employee.EmployeeRepository;
+import mrcool.hr.entity.certificate.CertificateActionRepository;
+import mrcool.hr.entity.certificate.CertificateStateRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -38,7 +40,21 @@ public class DesignationControllerTest {
     private EmployeeRepository employeeRepository;
 
     @Autowired
+    private CertificateActionRepository certificateActionRepository;
+
+    @Autowired
+    private CertificateStateRepository certificateStateRepository;
+
+    @Autowired
     private EntityManager entityManager;
+
+    @org.junit.jupiter.api.BeforeEach
+    void cleanWorkflowTables() {
+        certificateActionRepository.deleteAll();
+        certificateStateRepository.deleteAll();
+        employeeRepository.deleteAll();
+        designationRepository.deleteAll();
+    }
 
     @Test
     void testGetAllDesignations() throws Exception {

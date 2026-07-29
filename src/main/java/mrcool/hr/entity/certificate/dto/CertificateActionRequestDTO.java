@@ -4,8 +4,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record CertificateRequestDTO(
-        @NotNull UUID candidateId,
-        @Size(max = 255) String title) {
+public record CertificateActionRequestDTO(
+        @NotNull UUID employeeId,
+        @Size(max = 4000) String comment) {
 }
-

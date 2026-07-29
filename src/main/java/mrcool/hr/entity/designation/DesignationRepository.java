@@ -9,6 +9,8 @@ public interface DesignationRepository extends JpaRepository<Designation, UUID> 
 
     boolean existsByName(String name);
 
+    boolean existsByNameAndIdNot(String name, UUID id);
+
     @Query("SELECT MAX(d.rank) FROM Designation d")
     Integer findMaxRank();
 

@@ -58,7 +58,7 @@ public class DesignationController {
 
     @PutMapping("/reorder")
     public ResponseEntity<List<DesignationResponseDTO>> reorder(
-            @Valid @RequestBody List<DesignationReorderRequestDTO> request) {
+            @RequestBody List<@Valid DesignationReorderRequestDTO> request) {
         List<DesignationResponseDTO> response = designationService.reorderDesignations(request);
         return ResponseEntity.ok(response);
     }

@@ -33,6 +33,7 @@ import mrcool.hr.entity.designation.Designation;
 @Table(name = "employee")
 public class Employee {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -52,6 +53,11 @@ public class Employee {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    @NotNull
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 
     @PrePersist
     public void onCreate() {

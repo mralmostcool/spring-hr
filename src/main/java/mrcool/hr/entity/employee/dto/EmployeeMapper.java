@@ -11,6 +11,7 @@ public class EmployeeMapper {
                 employee.getId(),
                 employee.getName(),
                 employee.getDesignation() != null ? DesignationMapper.toResponse(employee.getDesignation()) : null,
+                employee.getIsActive(),
                 employee.getCreatedAt(),
                 employee.getUpdatedAt());
     }
@@ -19,6 +20,7 @@ public class EmployeeMapper {
         return Employee.builder()
                 .name(request.name())
                 .designation(designation)
+                .isActive(true)
                 .build();
     }
 }

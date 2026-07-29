@@ -12,6 +12,8 @@ import tools.jackson.databind.ObjectMapper;
 import mrcool.hr.entity.designation.Designation;
 import mrcool.hr.entity.designation.DesignationRepository;
 import mrcool.hr.entity.employee.dto.EmployeeRequestDTO;
+import mrcool.hr.entity.certificate.CertificateActionRepository;
+import mrcool.hr.entity.certificate.CertificateStateRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,6 +36,20 @@ public class EmployeeControllerTest {
 
     @Autowired
     private DesignationRepository designationRepository;
+
+    @Autowired
+    private CertificateActionRepository certificateActionRepository;
+
+    @Autowired
+    private CertificateStateRepository certificateStateRepository;
+
+    @org.junit.jupiter.api.BeforeEach
+    void cleanWorkflowTables() {
+        certificateActionRepository.deleteAll();
+        certificateStateRepository.deleteAll();
+        employeeRepository.deleteAll();
+        designationRepository.deleteAll();
+    }
 
     @Test
     void testGetAllEmployees() throws Exception {
@@ -161,7 +177,7 @@ public class EmployeeControllerTest {
                 .andExpect(jsonPath("$.id", is(emp.getId().toString())))
                 .andExpect(jsonPath("$.name", is("Heidi")));
 
-        assertFalse(employeeRepository.existsById(emp.getId()));
+        assertFalse(employeeRepository.findById(emp.getId()).map(Employee::getIsActive).orElse(true));
     }
 
     @Test
@@ -184,7 +200,7 @@ public class EmployeeControllerTest {
                 .andExpect(jsonPath("$[0].name", isOneOf("Ivan", "Judy")))
                 .andExpect(jsonPath("$[1].name", isOneOf("Ivan", "Judy")));
 
-        assertFalse(employeeRepository.existsById(emp1.getId()));
-        assertFalse(employeeRepository.existsById(emp2.getId()));
+        assertFalse(employeeRepository.findById(emp1.getId()).map(Employee::getIsActive).orElse(true));
+        assertFalse(employeeRepository.findById(emp2.getId()).map(Employee::getIsActive).orElse(true));
     }
 }

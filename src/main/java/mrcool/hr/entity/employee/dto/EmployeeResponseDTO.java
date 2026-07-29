@@ -8,6 +8,7 @@ public record EmployeeResponseDTO(
         UUID id,
         String name,
         DesignationResponseDTO designation,
+        Boolean isActive,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 }

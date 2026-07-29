@@ -14,16 +14,25 @@ import mrcool.hr.entity.designation.dto.DesignationRequestDTO;
 import mrcool.hr.entity.designation.dto.DesignationResponseDTO;
 import mrcool.hr.entity.designation.dto.DesignationReorderRequestDTO;
 import mrcool.hr.entity.employee.EmployeeRepository;
+import mrcool.hr.entity.certificate.CertificateActionRepository;
+import mrcool.hr.entity.certificate.CertificateStateRepository;
 
 @Service
 public class DesignationService {
 
     private final DesignationRepository designationRepository;
     private final EmployeeRepository employeeRepository;
+    private final CertificateActionRepository certificateActionRepository;
+    private final CertificateStateRepository certificateStateRepository;
 
-    public DesignationService(DesignationRepository designationRepository, EmployeeRepository employeeRepository) {
+    public DesignationService(DesignationRepository designationRepository, 
+                              EmployeeRepository employeeRepository,
+                              CertificateActionRepository certificateActionRepository,
+                              CertificateStateRepository certificateStateRepository) {
         this.designationRepository = designationRepository;
         this.employeeRepository = employeeRepository;
+        this.certificateActionRepository = certificateActionRepository;
+        this.certificateStateRepository = certificateStateRepository;
     }
 
     public List<DesignationResponseDTO> getAllDesignations() {
@@ -64,6 +73,9 @@ public class DesignationService {
     }
 
     public DesignationResponseDTO createDesignation(DesignationRequestDTO request) {
+        if (designationRepository.existsByName(request.name())) {
+            throw new DuplicateResourceException("Designation with name " + request.name() + " already exists");
+        }
         try {
             Designation designation = DesignationMapper.toEntity(request);
             if (designation.getRank() == null) {
@@ -80,6 +92,10 @@ public class DesignationService {
     public DesignationResponseDTO updateDesignation(UUID id, DesignationRequestDTO request) {
         Designation designation = designationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Designation with ID " + id + " not found"));
+
+        if (designationRepository.existsByNameAndIdNot(request.name(), id)) {
+            throw new DuplicateResourceException("Designation with name " + request.name() + " already exists");
+        }
 
         try {
             designation.setName(request.name());
@@ -100,6 +116,12 @@ public class DesignationService {
     public DesignationResponseDTO deleteDesignation(UUID id) {
         Designation designation = designationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Designation with ID " + id + " not found"));
+
+        if (employeeRepository.existsByDesignationId(id)) {
+            throw new DuplicateResourceException("Cannot delete designation with ID " + id
+                    + " because it is currently assigned to one or more employees.");
+        }
+
         try {
             designationRepository.deleteById(id);
             designationRepository.flush();
@@ -113,6 +135,8 @@ public class DesignationService {
     @Transactional
     public List<DesignationResponseDTO> deleteAllDesignations() {
         List<DesignationResponseDTO> designations = getAllDesignations();
+        certificateActionRepository.deleteAll();
+        certificateStateRepository.deleteAll();
         employeeRepository.deleteAll();
         designationRepository.deleteAll();
         return designations;

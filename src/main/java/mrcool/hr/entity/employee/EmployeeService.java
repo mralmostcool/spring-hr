@@ -27,7 +27,7 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public List<EmployeeResponseDTO> getAllEmployees() {
-        return employeeRepository.findAll()
+        return employeeRepository.findAllByIsActiveTrue()
                 .stream()
                 .map(EmployeeMapper::toResponse)
                 .toList();
@@ -35,7 +35,7 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public EmployeeResponseDTO getEmployeeById(UUID id) {
-        return employeeRepository.findById(id)
+        return employeeRepository.findByIdAndIsActiveTrue(id)
                 .map(EmployeeMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee with ID " + id + " not found"));
     }
@@ -51,7 +51,7 @@ public class EmployeeService {
     }
 
     public EmployeeResponseDTO updateEmployee(UUID id, EmployeeRequestDTO request) {
-        Employee employee = employeeRepository.findById(id)
+        Employee employee = employeeRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee with ID " + id + " not found"));
 
         Designation designation = designationRepository.findById(request.designationId())
@@ -66,17 +66,22 @@ public class EmployeeService {
     }
 
     public EmployeeResponseDTO deleteEmployee(UUID id) {
-        Employee employee = employeeRepository.findById(id)
+        Employee employee = employeeRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee with ID " + id + " not found"));
 
-        employeeRepository.deleteById(id);
-        employeeRepository.flush();
-        return EmployeeMapper.toResponse(employee);
+        employee.setIsActive(false);
+        Employee updated = employeeRepository.saveAndFlush(employee);
+        return EmployeeMapper.toResponse(updated);
     }
 
     public List<EmployeeResponseDTO> deleteAllEmployees() {
-        List<EmployeeResponseDTO> employees = getAllEmployees();
-        employeeRepository.deleteAll();
-        return employees;
+        List<Employee> activeEmployees = employeeRepository.findAllByIsActiveTrue();
+        for (Employee emp : activeEmployees) {
+            emp.setIsActive(false);
+        }
+        employeeRepository.saveAllAndFlush(activeEmployees);
+        return activeEmployees.stream()
+                .map(EmployeeMapper::toResponse)
+                .toList();
     }
 }
